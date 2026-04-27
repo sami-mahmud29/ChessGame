@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.chessgame.HelloController">
+
+    <!-- TOP BAR -->
+    <top>
+        <HBox spacing="20" alignment="CENTER" style="-fx-padding: 10;">
+            <Button text="Start Game" onAction="#handleStart"/>
+            <Label fx:id="timerLabel" text="Time: 0"/>
+            <Label fx:id="statusLabel" text="Press Start"/>
+        </HBox>
+    </top>
+
+    <!-- CENTER BOARD -->
+    <center>
+        <GridPane fx:id="boardGrid"
+                  prefWidth="800"
+                  prefHeight="600"
+                  style="-fx-alignment: center;"/>
+    </center>
+
+</BorderPane>

@@ -7,12 +7,13 @@
 <?import javafx.scene.control.Button?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.example.chessgame.HelloController">
+            fx:controller="com.example.chessgame.controller.HelloController">
 
     <!-- TOP BAR -->
     <top>
         <HBox spacing="20" alignment="CENTER" style="-fx-padding: 10;">
-            <Button text="Start Game" onAction="#handleStart"/>
+            <Button fx:id="startGameButton" text="Start Game" onAction="#handleStart"/>
+            <Button fx:id="quitButton" text="Quit" onAction="#handleQuit"/>
             <Label fx:id="timerLabel" text="Time: 0"/>
             <Label fx:id="statusLabel" text="Press Start"/>
         </HBox>

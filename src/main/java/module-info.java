@@ -6,4 +6,6 @@ module com.example.chessgame {
 
     opens com.example.chessgame to javafx.fxml;
     exports com.example.chessgame;
+    exports com.example.chessgame.controller;
+    opens com.example.chessgame.controller to javafx.fxml;
 }

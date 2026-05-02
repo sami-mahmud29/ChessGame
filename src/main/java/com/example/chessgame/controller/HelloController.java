@@ -1,9 +1,11 @@
 package com.example.chessgame.controller;
 
+import com.example.chessgame.logic.LanConnection;
 import com.example.chessgame.model.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -36,9 +38,25 @@ public class HelloController {
 
     // 🎮 GAME MODE
     private boolean vsAI = false;
+    private boolean lanMode = false;
+    private boolean lanHost = false;
+    private String lanHostAddress = "127.0.0.1";
+    private int lanPort = 5000;
+    private String localColor = "WHITE";
+    private boolean lanConnected = false;
+    private LanConnection lanConnection;
 
     public void setVsAI(boolean vsAI) {
         this.vsAI = vsAI;
+    }
+
+    public void enableLanMode(boolean isHost, String hostAddress, int port) {
+        lanMode = true;
+        lanHost = isHost;
+        lanHostAddress = hostAddress;
+        lanPort = port;
+        localColor = lanHost ? "WHITE" : "BLACK";
+        vsAI = false;
     }
 
     private Board board;
@@ -67,14 +85,13 @@ public class HelloController {
 
         if (gameStarted) return; // prevent restart spam
 
+        if (lanMode) {
+            startLanSession();
+            return;
+        }
+
         gameStarted = true;
-
-        whiteTime = 600;
-        blackTime = 600;
-
-        currentTurn = "WHITE";
-
-        updateTimerDisplay();
+        startLocalTimers();
         statusLabel.setText("Game Started! Turn: WHITE");
 
         // Hide Start after game begins (but keep Quit).
@@ -98,8 +115,10 @@ public class HelloController {
         // Stop timers so no AI "delayed move" runs after leaving.
         if (timeline != null) timeline.stop();
         if (aiPause != null) aiPause.stop();
+        if (lanConnection != null) lanConnection.close();
 
         aiThinking = false;
+        lanConnected = false;
         gameStarted = false;
         currentTurn = "WHITE";
         selectedPosition = null;
@@ -206,7 +225,18 @@ public class HelloController {
     private void handleClick(int row, int col) {
 
         if (!gameStarted) {
-            statusLabel.setText("Press Start first!");
+            statusLabel.setText(lanMode ? "Press Start and connect LAN first." : "Press Start first!");
+            return;
+        }
+
+        if (lanMode && !lanConnected) {
+            statusLabel.setText("LAN not connected yet.");
+            return;
+        }
+
+        if (lanMode && !currentTurn.equals(localColor)) {
+            statusLabel.setText("Waiting for opponent move...");
+            selectedPosition = null;
             return;
         }
 
@@ -258,8 +288,14 @@ public class HelloController {
 
             drawBoard();
 
+            if (lanMode) {
+                sendLanMove(selectedPosition, target);
+                statusLabel.setText((board.isKingInCheck(currentTurn) ? "CHECK! " : "") +
+                        "Waiting for opponent...");
+            }
+
             // 🤖 AI MOVE
-            if (vsAI && currentTurn.equals("BLACK")) {
+            if (!lanMode && vsAI && currentTurn.equals("BLACK")) {
                 aiThinking = true;
                 statusLabel.setText((board.isKingInCheck(currentTurn) ? "CHECK! " : "") +
                         "AI is thinking...");
@@ -298,8 +334,10 @@ public class HelloController {
 
             } else {
                 // 2 PLAYER
-                statusLabel.setText((board.isKingInCheck(currentTurn) ? "CHECK! " : "") +
-                        "Turn: " + currentTurn);
+                if (!lanMode) {
+                    statusLabel.setText((board.isKingInCheck(currentTurn) ? "CHECK! " : "") +
+                            "Turn: " + currentTurn);
+                }
             }
 
         } else {
@@ -308,5 +346,102 @@ public class HelloController {
 
         selectedPosition = null;
         drawBoard();
+    }
+
+    private void startLocalTimers() {
+        whiteTime = 600;
+        blackTime = 600;
+        currentTurn = "WHITE";
+        updateTimerDisplay();
+        if (timeline != null) timeline.stop();
+        timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateClock()));
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
+    }
+
+    private void startLanSession() {
+        statusLabel.setText(lanHost
+                ? "Waiting for player on port " + lanPort + "..."
+                : "Connecting to " + lanHostAddress + ":" + lanPort + "...");
+        startGameButton.setDisable(true);
+
+        Thread connectThread = new Thread(() -> {
+            try {
+                lanConnection = new LanConnection(lanHost, lanHostAddress, lanPort);
+                lanConnection.connect();
+
+                Platform.runLater(() -> {
+                    lanConnected = true;
+                    gameStarted = true;
+                    startLocalTimers();
+                    if (startGameButton != null) {
+                        startGameButton.setVisible(false);
+                        startGameButton.setDisable(true);
+                    }
+                    statusLabel.setText("Connected! You are " + localColor + ". Turn: " + currentTurn);
+                });
+
+                lanConnection.listen(this::applyOpponentMove, () -> Platform.runLater(() -> {
+                    lanConnected = false;
+                    if (gameStarted) {
+                        statusLabel.setText("Opponent disconnected.");
+                    }
+                }));
+            } catch (IOException ex) {
+                Platform.runLater(() -> {
+                    lanConnected = false;
+                    startGameButton.setDisable(false);
+                    statusLabel.setText("LAN connection failed. Check host IP/port, host pressed Start, and firewall.");
+                });
+            }
+        });
+        connectThread.setDaemon(true);
+        connectThread.start();
+    }
+
+    private void sendLanMove(Position from, Position to) {
+        if (!lanConnected || lanConnection == null) return;
+        try {
+            lanConnection.sendMove(new Move(from, to));
+        } catch (IOException ex) {
+            lanConnected = false;
+            statusLabel.setText("Failed to send move. Connection lost.");
+        }
+    }
+
+    private void applyOpponentMove(Move move) {
+        Platform.runLater(() -> {
+            if (!lanConnected) return;
+
+            Piece destinationPiece = board.getPiece(move.to.row, move.to.col);
+            if (destinationPiece instanceof King) {
+                return;
+            }
+
+            if (!board.isValidMove(move.from, move.to) ||
+                    !board.isMoveSafe(move.from, move.to, currentTurn)) {
+                statusLabel.setText("Received invalid move from opponent.");
+                return;
+            }
+
+            board.movePiece(move.from, move.to);
+            board.promotePawn(move.to);
+
+            if (board.isCheckmate(currentTurn.equals("WHITE") ? "BLACK" : "WHITE")) {
+                timeline.stop();
+                statusLabel.setText("CHECKMATE! " +
+                        (currentTurn.equals("WHITE") ? "WHITE WINS" : "BLACK WINS"));
+                statusLabel.setStyle("-fx-font-size: 20; -fx-text-fill: red;");
+                drawBoard();
+                selectedPosition = null;
+                return;
+            }
+
+            currentTurn = currentTurn.equals("WHITE") ? "BLACK" : "WHITE";
+            statusLabel.setText((board.isKingInCheck(currentTurn) ? "CHECK! " : "") +
+                    "Turn: " + currentTurn);
+            selectedPosition = null;
+            drawBoard();
+        });
     }
 }

@@ -1,23 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 
-<VBox alignment="CENTER" spacing="20"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.example.chessgame.controller.MenuController"
-      style="-fx-background-color: #b58863;">
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.example.chessgame.controller.MenuController"
+           prefWidth="600.0"
+           prefHeight="600.0"
+           style="-fx-background-image: url('/chessBackground.jpg'); -fx-background-size: cover; -fx-background-position: center right; -fx-background-repeat: no-repeat;">
 
-    <Label text="Welcome to Chess"
-           style="-fx-font-size: 30; -fx-text-fill: white;" />
+    <VBox alignment="CENTER" spacing="20">
 
-    <Button text="Play vs AI"
-            onAction="#handleVsAI"
-            style="-fx-font-size: 16;" />
+        <Label text="Welcome to Chess"
+               style="-fx-font-size: 40; -fx-text-fill: red;" />
 
-    <Button text="2 Player"
-            onAction="#handleTwoPlayer"
-            style="-fx-font-size: 16;" />
 
-</VBox>
+        <Button text="Play vs AI"
+                onAction="#handleVsAI"
+                style="-fx-font-size: 16;" />
+
+        <Button text="2 Player"
+                onAction="#handleTwoPlayer"
+                style="-fx-font-size: 16;" />
+
+        <Button text="LAN Multiplayer"
+                onAction="#handleLanMultiplayer"
+                style="-fx-font-size: 16;" />
+
+    </VBox>
+</StackPane>

@@ -9,7 +9,7 @@
            fx:controller="com.example.chessgame.controller.MenuController"
            prefWidth="600.0"
            prefHeight="600.0"
-           style="-fx-background-image: url('/chessBackground.jpg'); -fx-background-size: cover; -fx-background-position: center right; -fx-background-repeat: no-repeat;">
+           style="-fx-background-image: url('/chessBackground.jpg'); -fx-background-size: cover; -fx-background-position: center center; -fx-background-repeat: no-repeat;">
 
     <VBox alignment="CENTER" spacing="20">
 

@@ -25,12 +25,20 @@ public class MenuController {
 
     @FXML
     private void handleVsAI(ActionEvent event) throws Exception {
-        openGame(event, true);
+        Integer seconds = askTimeSelection(true);
+        if (seconds == null) {
+            return;
+        }
+        openGame(event, true, seconds);
     }
 
     @FXML
     private void handleTwoPlayer(ActionEvent event) throws Exception {
-        openGame(event, false);
+        Integer seconds = askTimeSelection(false);
+        if (seconds == null) {
+            return;
+        }
+        openGame(event, false, seconds);
     }
 
     @FXML
@@ -100,7 +108,27 @@ public class MenuController {
         openLanGame(event, isHost, hostAddress, port);
     }
 
-    private void openGame(ActionEvent event, boolean vsAI) throws Exception {
+    private Integer askTimeSelection(boolean vsAI) {
+        if (vsAI) {
+            ChoiceDialog<String> dialog = new ChoiceDialog<>("5 minutes", "5 minutes", "10 minutes");
+            dialog.setTitle("Choose Time Control");
+            dialog.setHeaderText("Play vs AI: choose clock length");
+            dialog.setContentText("Time:");
+
+            Optional<String> result = dialog.showAndWait();
+            return result.map(choice -> choice.equals("5 minutes") ? 300 : 600).orElse(null);
+        } else {
+            ChoiceDialog<String> dialog = new ChoiceDialog<>("Current (10 minutes)", "Current (10 minutes)", "5 minutes");
+            dialog.setTitle("Choose Time Control");
+            dialog.setHeaderText("2 Player: choose clock length");
+            dialog.setContentText("Time:");
+
+            Optional<String> result = dialog.showAndWait();
+            return result.map(choice -> choice.equals("5 minutes") ? 300 : 600).orElse(null);
+        }
+    }
+
+    private void openGame(ActionEvent event, boolean vsAI, int timeSeconds) throws Exception {
 
         FXMLLoader loader = new FXMLLoader(
                 getClass().getResource("/com/example/chessgame/hello-view.fxml")
@@ -111,6 +139,7 @@ public class MenuController {
 // 🔥 THIS LINE IS CRITICAL
         HelloController controller = loader.getController();
         controller.setVsAI(vsAI);
+        controller.setGameDurationSeconds(timeSeconds);
 
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         stage.setScene(scene);

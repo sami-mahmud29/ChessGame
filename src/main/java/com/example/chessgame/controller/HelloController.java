@@ -69,6 +69,7 @@ public class HelloController {
     // ⏱ CHESS CLOCK
     private int whiteTime = 600;
     private int blackTime = 600;
+    private int gameDurationSeconds = 600;
 
     private Timeline timeline;
     private PauseTransition aiPause;
@@ -348,9 +349,13 @@ public class HelloController {
         drawBoard();
     }
 
+    public void setGameDurationSeconds(int seconds) {
+        this.gameDurationSeconds = seconds;
+    }
+
     private void startLocalTimers() {
-        whiteTime = 600;
-        blackTime = 600;
+        whiteTime = gameDurationSeconds;
+        blackTime = gameDurationSeconds;
         currentTurn = "WHITE";
         updateTimerDisplay();
         if (timeline != null) timeline.stop();

@@ -180,7 +180,7 @@ public class HelloController {
 
                 String baseStyle = (row + col) % 2 == 0
                         ? "-fx-background-color: #f0d9b5;"
-                        : "-fx-background-color: #b58863;";
+                        : "-fx-background-color: #00b294;";
 
                 // selected
                 if (selectedPosition != null &&
